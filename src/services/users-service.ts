@@ -59,3 +59,26 @@ export const loginUser = async (email: string, password: string) => {
 
   return token;
 };
+
+export const getCurrentUser = async (token: string) => {
+  // 1. Cari data user berdasarkan token di tabel sessions
+  const sessionResults = await db
+    .select({
+      id: users.id,
+      name: users.name,
+      email: users.email,
+      createdAt: users.createdAt,
+    })
+    .from(sessions)
+    .innerJoin(users, eq(sessions.userId, users.id))
+    .where(eq(sessions.token, token))
+    .limit(1);
+
+  const user = sessionResults[0];
+
+  if (!user) {
+    throw new Error('Unauthorized');
+  }
+
+  return user;
+};
