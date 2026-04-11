@@ -20,8 +20,9 @@ export const app = new Elysia()
       message: 'Hello World from Elysia + Drizzle!',
       timestamp: new Date().toISOString(),
     };
-  })
-  .listen(process.env.PORT || 3000);
+  });
+
+app.listen(process.env.PORT || 3000);
 
 console.log(
   `🚀 Server is running at ${app.server?.hostname}:${app.server?.port}`

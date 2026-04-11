@@ -10,7 +10,7 @@ Aplikasi ini dibangun menggunakan teknologi modern yang sangat cepat dan ringan:
 - **ORM**: [Drizzle ORM](https://orm.drizzle.team/)
 - **Database**: MySQL
 - **Validation**: TypeBox (bawaan Elysia via `t`)
-- **Password Hashing**: `bcrypt`
+- **Password Hashing**: [Bun.password](https://bun.sh/docs/api/password) (using Argon2id)
 - **Testing**: `bun test` (test runner bawaan Bun)
 
 ## Arsitektur & Struktur Folder

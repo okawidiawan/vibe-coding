@@ -23,7 +23,7 @@ export const registerUser = async (name: string, email: string, password: string
     throw new Error('Email sudah terdaftar');
   }
 
-  // 2. Hash password menggunakan Bun.password (default bcrypt)
+  // 2. Hash password menggunakan Bun.password (default Argon2id)
   const hashedPassword = await Bun.password.hash(password);
 
   // 3. Simpan ke database
