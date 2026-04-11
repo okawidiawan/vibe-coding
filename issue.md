@@ -1,82 +1,77 @@
-# Fitur: Integrasi Swagger UI untuk Dokumentasi API
+# Issue: Buat API Get Current User
 
 ## Deskripsi Masalah
+Kita membutuhkan endpoint API untuk mendapatkan data profil dari *user* yang saat ini sedang login. Klien atau Frontend akan mengirimkan *Session Token* sebagai bentuk autentikasi, dan sistem harus mengembalikan data detail dari *user* tersebut.
 
-Saat ini, proyek *User Management API* belum memiliki halaman dokumentasi interaktif yang bisa langsung diuji coba oleh developer atau *client* (seperti aplikasi mobile/frontend) yang ingin menggunakan API kita. 
+## Spesifikasi API
 
-Untuk mempermudahnya, kita perlu menambahkan **Swagger UI**. Karena kita menggunakan framework [Elysia](https://elysiajs.com/), proses integrasinya sanga mudah menggunakan plugin bawaan yaitu `@elysiajs/swagger`.
+- **Endpoint:** `GET /api/users/current`
+- **Headers:** 
+  - `Authorization: Bearer <token>`
+*(Catatan: `<token>` adalah token UUID yang sudah ada di tabel `sessions` saat proses login)*
+
+**Response Success (200 OK):**
+```json
+{
+    "data": {
+        "id": 1,
+        "name": "Oka",
+        "email": "oka@localhost",
+        "created_at": "timestamp"
+    }
+}
+```
+
+**Response Error (401 Unauthorized):**
+Misalnya karena token tidak dikirim, token salah, atau sesi sudah kedaluwarsa/hilang.
+```json
+{
+    "error": "Unauthorized"
+}
+```
+
+---
+
+## Struktur File Terkait
+Di dalam folder `src/`, kita sudah membagi logic ke dalam *routes* dan *services*. Ikuti letak foldernya:
+- **Routes:** berisi konfigurasi ElysiaJS (contoh: `src/routes/users-route.ts`)
+- **Services:** berisi *business logic* dan query Drizzle ORM ke database (contoh: `src/services/users-service.ts`)
 
 ---
 
-## Instruksi Implementasi
+## Tahapan Implementasi
 
-Tugas ini ditujukan agar kamu (Junior Programmer / AI) bisa mendeploy fitur Swagger langkah demi langkah tanpa merusak logic yang sudah ada. 
+Untuk mengimplementasikan fitur ini, harap kerjakan seluruh tahapan di bawah secara berurutan:
 
-Ikuti tahapan di bawah ini dengan berurutan:
+### Tahap 1: Ekstraksi Token (Opsional jika sudah ada)
+**(File: `src/routes/users-route.ts`)**
+1. Periksa apakah sudah ada logic / `derive` di *route* Elysia untuk mengekstrak token dari header `Authorization`. Jika belum, tambahkan `.derive()` middleware untuk memisahkan string `Bearer ` dan mendapatkan *pure* token-nya agar dapat digunakan di berbagai endpoint dengan mudah.
 
-### Tahap 1: Instalasi Dependensi
-1. Buka terminal di dalam *root directory* proyek (`vibe-coding/`).
-2. Jalankan perintah instalasi menggunakan Bun:
-   ```bash
-   bun add @elysiajs/swagger
-   ```
+### Tahap 2: Menambahkan Business Logic di Service
+**(File: `src/services/users-service.ts`)**
+1. Buat dan *export* satu *async function* baru, misalnya bernama `getCurrentUser(token: string)`.
+2. Di dalam fungsi tersebut, buat query pencarian database menggunakan *drizzle-orm*:
+   - Cari data di tabel `sessions` dengan melakukan pencocokan (`eq`) kepada nilai token parameter.
+   - Karena tabel `sessions` hanya memiliki `userId`, lakukan *JOIN* (`innerJoin`) dengan tabel `users` untuk mendapatkan field yang dibutuhkan (`id`, `name`, `email`, `createdAt` / `created_at`).
+   - Limit pencarian ke 1 data (*limit 1*).
+3. Buat kondisi validasi:
+   - Jika query return data yang kosong/tidak ada, lakukan `throw new Error('Unauthorized')`.
+4. Jika query berhasil dan data ditemukan, kembalikan data *user* tersebut.
 
-### Tahap 2: Menambahkan Plugin ke dalam Aplikasi Utama
-1. Buka file entry point aplikasi yaitu `src/index.ts`.
-2. Lakukan import Swagger plugin di bagian atas file:
-   ```typescript
-   import { swagger } from '@elysiajs/swagger';
-   ```
-3. Sisipkan plugin Swagger tersebut ke dalam inisialisasi Elysia. Pastikan metode `.use(swagger(...))` dipanggil sebelum mendaftarkan rute (sebelum `.use(usersRoute)` atau di awal-awal *chaining*):
-   ```typescript
-   export const app = new Elysia()
-     .use(swagger({
-       documentation: {
-         info: {
-           title: 'Vibe Coding User API',
-           version: '1.0.0',
-           description: 'API Documentation for User Management'
-         }
-       }
-     }))
-     .use(usersRoute)
-     // ... rute lainnya
-   ```
+### Tahap 3: Mendaftarkan Endpoint dan Validasi
+**(File: `src/routes/users-route.ts`)**
+1. Daftarkan _sub-route_ baru menggunakan `.get('/users/current', async ({ token, set }) => { ... })` mengikuti bentuk parameter Elysia.
+2. Di dalamnya, tambahkan logic *try...catch*:
+   - Jika `token` kosong, langsung kembalikan status `401` dengan JSON `error: "Unauthorized"`.
+   - Panggil fungsi `getCurrentUser(token)` yang sudah dikerjakan di Tahap 2.
+   - Sesuai Response Body _Success_, kembalikan data _user_ menggunakan properti `data`, yaitu `return { data: user }`.
+   - Di dalam blog `catch (error)`, pastikan jika error message bernada *Unauthorized*, maka atur `set.status = 401` dan kembalikan JSON konfigurasinya.
+3. Tetapkan TypeBox validasi pada parameter ketiga dari method HTTP untuk memberikan schema yang baik, dan gunakan Swagger metadata (tambahkan tag `User Management` atau sejenisnya) supaya muncul cantik di Swagger UI.
 
-### Tahap 3: Memberikan Metadata pada API Route (Opsional namun Sangat Disarankan)
-Elysia secara otomatis akan mendeteksi schema `t.Object` yang ada pada `users-route.ts`. Kamu hanya perlu memastikan *summary* dan *description* agar rapi di UI Swagger. 
-
-1. Buka file `src/routes/users-route.ts`
-2. Tambahkan properti `detail` pada parameter skema blok rute. Contoh modifikasi di dalam fungsi `.post()`, `.get()`, dan `.delete()`:
-   ```typescript
-   .post('/users', async ({ body, set }) => {
-     // ... logic tetap sama
-   }, {
-     body: t.Object({ ... }),
-     detail: {
-       summary: 'Register User',
-       tags: ['Authentication']
-     }
-   })
-   ```
-3. Lakukan hal serupa seperti memberikan `tags: ['Authentication']` pada endpoint login, current profile, dan logout. Ini bertujuan untuk mengumpulkan/mengelompokkan endpoint di dalam tampilan Swagger.
-
-### Tahap 4: Pengujian Lokal (Verifikasi)
-1. Jalankan aplikasi menggunakan perintah development:
-   ```bash
-   bun run dev
-   ```
-2. Buka browser dan arahkan ke alamat berikut: `http://localhost:3000/swagger`
-3. Verifikasi apakah:
-   - Halaman Swagger UI sukses ditampilkan?
-   - Endpoint `GET /`, `POST /api/users`, `POST /api/users/login`, dan lain sebagainya terdeteksi dan tercatat dengan benar?
-   - Cobalah lakukan *Test Endpoint* (Execute) secara manual melalui Swagger UI tersebut.
-
-### Tahap 5: Update Dokumentasi & Commit
-1. Buka file `README.md` dan tambahkan informasi mengenai ketersediaan API documentation.
-   Contoh teks yang bisa disisipkan: "Aplikasi menyediakan dokumentasi interaktif. Buka `http://localhost:3000/swagger` pada browser saat aplikasi berjalan untuk melihat dokumentasi API secara lengkap."
-2. Lakukan `git add .` dan buat commit dengan format: `feat: add swagger documentation UI`.
-3. Push perubahan ke *remote branch*.
-
----
-**Catatan untuk Implementator:** Jika kamu menghadapi kesulitan atau pesan *error* terkait *version mismatch* TypeBox atau Elysia, pastikan versi Elysia dan `@elysiajs/swagger`-nya bersesuaian (`latest`). Baca referensi resmi di [Elysia Swagger Plugin](https://elysiajs.com/plugins/swagger.html).
+### Tahap 4: Pengujian Endpoint
+Silakan lakukan pengetesan manual setelah koding selesai.
+1. Jalankan project dengan `bun run dev` (atau sesuaikan dengan script package).
+2. Login dahulu ke dalam sistem dengan `POST /api/users/login` dan catat/copy token yang dikembalikan.
+3. Gunakan *cURL* / Postman / SwaggerUI di browser untuk mencoba _GET /api/users/current_ dan set header `Authorization: Bearer <TOKEN_TERTULIS>`.
+4. Pastikan data profil JSON dikembalikan dengan benar.
+5. Coba hit tanpa Header Authorization, pastikan keluar pesan *Unauthorized* beserta HTTP *status code* 401.
