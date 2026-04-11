@@ -23,6 +23,12 @@ export const usersRoute = new Elysia({ prefix: '/api' })
       email: t.String({ format: 'email', maxLength: 255 }),
       password: t.String({ maxLength: 255 })
     }),
+    response: {
+      200: t.Object({ data: t.String() }),
+      400: t.Object({ error: t.String() }),
+      422: t.Object({ error: t.String() }), // for typebox validation errors
+      500: t.Object({ error: t.String() })
+    },
     detail: {
       summary: 'Register User',
       tags: ['Authentication']
@@ -48,6 +54,12 @@ export const usersRoute = new Elysia({ prefix: '/api' })
       email: t.String({ format: 'email' }),
       password: t.String()
     }),
+    response: {
+      200: t.Object({ data: t.String() }),
+      401: t.Object({ error: t.String() }),
+      422: t.Object({ error: t.String() }), // for typebox validation errors
+      500: t.Object({ error: t.String() })
+    },
     detail: {
       summary: 'Login User',
       tags: ['Authentication']
@@ -79,6 +91,18 @@ export const usersRoute = new Elysia({ prefix: '/api' })
       return { error: 'Internal Server Error' };
     }
   }, {
+    response: {
+      200: t.Object({
+        data: t.Object({
+          id: t.Number(),
+          name: t.String(),
+          email: t.String(),
+          createdAt: t.Optional(t.Union([t.Date(), t.String(), t.Null()]))
+        })
+      }),
+      401: t.Object({ error: t.String() }),
+      500: t.Object({ error: t.String() })
+    },
     detail: {
       summary: 'Get Current User Profile',
       tags: ['User Management'],
@@ -105,6 +129,11 @@ export const usersRoute = new Elysia({ prefix: '/api' })
       return { error: 'Internal Server Error' };
     }
   }, {
+    response: {
+      200: t.Object({ data: t.String() }),
+      401: t.Object({ error: t.String() }),
+      500: t.Object({ error: t.String() })
+    },
     detail: {
       summary: 'Logout User',
       tags: ['Authentication'],
