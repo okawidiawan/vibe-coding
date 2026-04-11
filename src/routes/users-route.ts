@@ -1,5 +1,5 @@
 import { Elysia, t } from "elysia";
-import { registerUser, loginUser, getCurrentUser } from "../services/users-service";
+import { registerUser, loginUser, getCurrentUser, logout } from "../services/users-service";
 
 export const usersRoute = new Elysia({ prefix: "/api" })
   .post(
@@ -22,10 +22,19 @@ export const usersRoute = new Elysia({ prefix: "/api" })
     },
     {
       body: t.Object({
-        name: t.String(),
-        email: t.String({ format: "email" }),
-        password: t.String(),
+        name: t.String({ maxLength: 255 }),
+        email: t.String({ format: "email", maxLength: 255 }),
+        password: t.String({ maxLength: 255 }),
       }),
+      response: {
+        200: t.Object({ data: t.String() }),
+        400: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
+      detail: {
+        summary: "Register User",
+        tags: ["Authentication"],
+      },
     },
   )
   .post(
@@ -51,27 +60,97 @@ export const usersRoute = new Elysia({ prefix: "/api" })
         email: t.String({ format: "email" }),
         password: t.String(),
       }),
+      response: {
+        200: t.Object({ data: t.String() }),
+        401: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
+      detail: {
+        summary: "Login User",
+        tags: ["Authentication"],
+      },
     },
   )
-  .get("/users/current", async ({ request, set }) => {
-    try {
-      const authHeader = request.headers.get("Authorization");
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        set.status = 401;
-        return { error: "Unauthorized" };
+  .derive(({ request }) => {
+    const authHeader = request.headers.get("Authorization");
+    return {
+      token: authHeader?.startsWith("Bearer ") ? authHeader.substring(7) : null,
+    };
+  })
+  .get(
+    "/users/current",
+    async ({ token, set }) => {
+      try {
+        if (!token) {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+
+        const user = await getCurrentUser(token);
+
+        return { data: user };
+      } catch (error: any) {
+        if (error.message === "Unauthorized") {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+
+        set.status = 500;
+        return { error: "Internal Server Error" };
       }
+    },
+    {
+      response: {
+        200: t.Object({
+          data: t.Object({
+            id: t.Number(),
+            name: t.String(),
+            email: t.String(),
+            createdAt: t.Any(),
+          }),
+        }),
+        401: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
+      detail: {
+        summary: "Get Current User Profile",
+        tags: ["User Management"],
+        security: [{ bearerAuth: [] }],
+      },
+    },
+  )
+  .delete(
+    "/users/logout",
+    async ({ token, set }) => {
+      try {
+        if (!token) {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
 
-      const token = authHeader.substring(7);
-      const user = await getCurrentUser(token);
+        await logout(token);
 
-      return { data: user };
-    } catch (error: any) {
-      if (error.message === "Unauthorized") {
-        set.status = 401;
-        return { error: "Unauthorized" };
+        return { data: "OK" };
+      } catch (error: any) {
+        if (error.message === "Unauthorized") {
+          set.status = 401;
+          return { error: "Unauthorized" };
+        }
+
+        set.status = 500;
+        return { error: "Internal Server Error" };
       }
-
-      set.status = 500;
-      return { error: "Internal Server Error" };
-    }
-  });
+    },
+    {
+      response: {
+        200: t.Object({ data: t.String() }),
+        401: t.Object({ error: t.String() }),
+        500: t.Object({ error: t.String() }),
+      },
+      detail: {
+        summary: "Logout User",
+        tags: ["Authentication"],
+        security: [{ bearerAuth: [] }],
+      },
+    },
+  );
