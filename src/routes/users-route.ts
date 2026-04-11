@@ -22,7 +22,11 @@ export const usersRoute = new Elysia({ prefix: '/api' })
       name: t.String({ maxLength: 255 }),
       email: t.String({ format: 'email', maxLength: 255 }),
       password: t.String({ maxLength: 255 })
-    })
+    }),
+    detail: {
+      summary: 'Register User',
+      tags: ['Authentication']
+    }
   })
   .post('/users/login', async ({ body, set }) => {
     try {
@@ -43,7 +47,11 @@ export const usersRoute = new Elysia({ prefix: '/api' })
     body: t.Object({
       email: t.String({ format: 'email' }),
       password: t.String()
-    })
+    }),
+    detail: {
+      summary: 'Login User',
+      tags: ['Authentication']
+    }
   })
   .derive(({ request }) => {
     const authHeader = request.headers.get('Authorization');
@@ -70,6 +78,12 @@ export const usersRoute = new Elysia({ prefix: '/api' })
       set.status = 500;
       return { error: 'Internal Server Error' };
     }
+  }, {
+    detail: {
+      summary: 'Get Current User Profile',
+      tags: ['User Management'],
+      security: [{ bearerAuth: [] }]
+    }
   })
   .delete('/users/logout', async ({ token, set }) => {
     try {
@@ -89,5 +103,11 @@ export const usersRoute = new Elysia({ prefix: '/api' })
       
       set.status = 500;
       return { error: 'Internal Server Error' };
+    }
+  }, {
+    detail: {
+      summary: 'Logout User',
+      tags: ['Authentication'],
+      security: [{ bearerAuth: [] }]
     }
   });
