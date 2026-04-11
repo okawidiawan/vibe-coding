@@ -1,7 +1,16 @@
 import { db } from '../../db';
 import { users, sessions } from '../../db/schema';
 import { eq } from 'drizzle-orm';
-
+/**
+ * Mendaftarkan pengguna baru ke dalam database.
+ * Melakukan pengecekan ketersediaan email dan melakukan hash pada password sebelum disimpan.
+ * 
+ * @param name - Nama pengguna
+ * @param email - Email pengguna yang bersifat unik
+ * @param password - Password pengguna dalam bentuk plain text
+ * @returns String 'OK' jika registrasi sukses
+ * @throws Error 'Email sudah terdaftar' jika email sudah digunakan
+ */
 export const registerUser = async (name: string, email: string, password: string) => {
   // 1. Cek apakah email sudah ada
   const existingUser = await db
@@ -26,7 +35,15 @@ export const registerUser = async (name: string, email: string, password: string
 
   return 'OK';
 };
-
+/**
+ * Melakukan proses autentikasi pengguna dengan mencocokkan email dan password.
+ * Jika validasi sukses, akan dibuatkan token sesi baru (UUID) yang disimpan di database.
+ * 
+ * @param email - Email dari akun pengguna
+ * @param password - Password akun dalam teks biasa
+ * @returns Token sesi (string) yang digunakan sebagai Bearer token
+ * @throws Error 'Email atau password salah' jika kredensial tidak cocok
+ */
 export const loginUser = async (email: string, password: string) => {
   // 1. Cari user berdasarkan email
   const userResults = await db
@@ -59,7 +76,14 @@ export const loginUser = async (email: string, password: string) => {
 
   return token;
 };
-
+/**
+ * Mengambil detail profil dari pengguna yang sedang aktif (login).
+ * Menggunakan token sesi untuk melakukan query join antara tabel sessions dan users.
+ * 
+ * @param token - Bearer token dari request header
+ * @returns Objek profil pengguna (id, name, email, createdAt)
+ * @throws Error 'Unauthorized' jika token tidak ditemukan atau sudah tidak valid
+ */
 export const getCurrentUser = async (token: string) => {
   // 1. Cari data user berdasarkan token di tabel sessions
   const sessionResults = await db
@@ -82,7 +106,14 @@ export const getCurrentUser = async (token: string) => {
 
   return user;
 };
-
+/**
+ * Mengakhiri sesi masuk (login) bagi pengguna terkait.
+ * Menghapus *record* token dari database pada tabel sessions.
+ * 
+ * @param token - Bearer token yang ingin dihapus/di-logout
+ * @returns String 'OK' jika logout sukses
+ * @throws Error 'Unauthorized' jika sesi tidak ditemukan sejak awal
+ */
 export const logout = async (token: string) => {
   // 1. Cek apakah session ada
   const sessionResults = await db

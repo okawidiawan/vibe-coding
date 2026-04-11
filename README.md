@@ -101,6 +101,15 @@ bun run dev
 
 Aplikasi secara default akan berjalan di `http://localhost:3000`.
 
+## Dokumentasi API (Swagger UI)
+
+Aplikasi ini dilengkapi dengan dokumentasi API interaktif menggunakan Swagger UI.
+Saat aplikasi berjalan, Anda dapat mengakses dokumentasi tersebut di:
+
+`http://localhost:3000/swagger`
+
+Di halaman ini, Anda dapat melihat seluruh daftar endpoint yang tersedia, skema request/response, serta mencoba API secara langsung.
+
 ## Cara Menjalankan Test
 
 Proyek ini telah mencakup unit test secara menyeluruh yang menguji validasi, database, flow registrasi, login, dan autentikasi token. Pastikan database MySQL siap sebelum menjalankan script ini karena data akan di-reset (teardown) setiap test berjalan.
