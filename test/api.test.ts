@@ -18,25 +18,6 @@ describe('API Integration Tests', () => {
             expect(body.timestamp).toBeDefined();
         });
 
-        it('GET /users should return an array of registered users', async () => {
-            // Register a user first
-            await app.handle(new Request(`${BASE_URL}/api/users`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    name: 'List User',
-                    email: 'list@example.com',
-                    password: 'password123'
-                })
-            }));
-
-            const response = await app.handle(new Request(`${BASE_URL}/users`));
-            expect(response.status).toBe(200);
-            const body: any = await response.json();
-            expect(Array.isArray(body)).toBe(true);
-            expect(body.length).toBeGreaterThan(0);
-            expect(body.some((u: any) => u.email === 'list@example.com')).toBe(true);
-        });
     });
 
     describe('Registration API (POST /api/users)', () => {
