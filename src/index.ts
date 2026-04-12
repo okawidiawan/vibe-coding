@@ -11,6 +11,15 @@ export const app = new Elysia()
         title: 'Vibe Coding User API',
         version: '1.0.0',
         description: 'API Documentation for User Management'
+      },
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'UUID'
+          }
+        }
       }
     }
   }))

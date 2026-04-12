@@ -27,7 +27,7 @@ Ikuti tahapan di bawah ini dengan berurutan:
    ```typescript
    import { swagger } from '@elysiajs/swagger';
    ```
-3. Sisipkan plugin Swagger tersebut ke dalam inisialisasi Elysia. Pastikan metode `.use(swagger(...))` dipanggil sebelum mendaftarkan rute (sebelum `.use(usersRoute)` atau di awal-awal *chaining*):
+3. Sisipkan plugin Swagger tersebut ke dalam inisialisasi Elysia. Pastikan metode `.use(swagger(...))` dipanggil sebelum mendaftarkan rute (sebelum `.use(usersRoute)` atau di awal-awal *chaining*). Pastikan juga menambahkan `components.securitySchemes` agar tombol *Authorize* (Bearer Token) muncul untuk menguji *endpoint* terpadu (seperti *current user* atau *logout*):
    ```typescript
    export const app = new Elysia()
      .use(swagger({
@@ -36,6 +36,15 @@ Ikuti tahapan di bawah ini dengan berurutan:
            title: 'Vibe Coding User API',
            version: '1.0.0',
            description: 'API Documentation for User Management'
+         },
+         components: {
+           securitySchemes: {
+             bearerAuth: {
+               type: 'http',
+               scheme: 'bearer',
+               bearerFormat: 'UUID'
+             }
+           }
          }
        }
      }))
